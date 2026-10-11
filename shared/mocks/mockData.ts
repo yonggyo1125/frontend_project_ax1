@@ -141,3 +141,73 @@ export const MOCK_FILES: FileInfo[] = [
         url: '/files/1',
     },
 ];
+
+import { Product } from '@/domains/products/types/product.types';
+
+export const MOCK_PRODUCTS: Product[] = [
+    {
+        id: 'prod-001',
+        gid: 'product-mock-1',
+        categoryId: 'cat-fashion-top-tshirt',
+        name: '오버핏 헤비 코튼 라운드 티셔츠',
+        price: 32000,
+        description:
+            '20수 고밀도 원사로 편직하여 비침이 적고 세탁 후 변형을 최소화한 베이직 오버핏 반팔 티셔츠입니다.',
+        images: [
+            'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+            'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+            'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800',
+        ],
+        isDisplayed: true,
+        displayPriority: 1,
+        createdAt: '2026-10-14T09:00:00Z',
+    },
+    {
+        id: 'prod-002',
+        gid: 'product-mock-2',
+        categoryId: 'cat-fashion-top-shirt',
+        name: '링클프리 클래식 옥스포드 셔츠',
+        price: 49000,
+        description:
+            '구김 방지 가공으로 다림질 없이 깔끔하게 착용 가능한 프리미엄 옥스포드 셔츠입니다.',
+        images: [
+            'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800',
+            'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800',
+        ],
+        isDisplayed: true,
+        displayPriority: 2,
+        createdAt: '2026-10-14T10:00:00Z',
+    },
+    {
+        id: 'prod-003',
+        gid: 'product-mock-3',
+        categoryId: 'cat-fashion-bottom-denim',
+        name: '와이드 스트레이트 인디고 데님 팬츠',
+        price: 58000,
+        description:
+            '자연스러운 틴 워싱과 편안한 밑위 길이로 트렌디한 실루엣을 완성하는 와이드 데님입니다.',
+        images: [
+            'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800',
+            'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800',
+        ],
+        isDisplayed: true,
+        displayPriority: 3,
+        createdAt: '2026-10-14T11:00:00Z',
+    },
+    {
+        id: 'prod-004',
+        gid: 'product-mock-4',
+        categoryId: 'cat-digital-pc',
+        name: '스탠다드 알루미늄 노트북 거치대',
+        price: 27500,
+        description:
+            '인체공학적 각도 조절과 알루미늄 합금 바디로 안정적인 거치와 발열 해소를 돕습니다.',
+        images: [
+            'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800',
+            'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800',
+        ],
+        isDisplayed: true,
+        displayPriority: 4,
+        createdAt: '2026-10-14T12:00:00Z',
+    },
+];
