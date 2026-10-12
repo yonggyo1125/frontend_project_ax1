@@ -1,5 +1,3 @@
-import Footer from '@/shared/components/Footer';
-import Header from '@/shared/components/Header';
 import type { Metadata } from 'next';
 import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
@@ -26,9 +24,7 @@ export default function RootLayout({
             <body
                 className={`${notoSansKr.className} flex min-h-screen flex-col bg-white text-gray-900 antialiased`}
             >
-                <Header />
-                <main className="w-full flex-1">{children}</main>
-                <Footer />
+                {children}
             </body>
         </html>
     );

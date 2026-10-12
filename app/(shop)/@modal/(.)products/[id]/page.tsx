@@ -13,7 +13,6 @@ export default function ProductInterceptModal({
     params: Promise<{ id: string }>;
 }) {
     const router = useRouter();
-    // React 19 / Next.js 비동기 params 언래핑
     const resolvedParams = React.use(params);
     const product = MOCK_PRODUCTS.find((p) => p.id === resolvedParams.id);
 
