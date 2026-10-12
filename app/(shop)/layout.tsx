@@ -1,3 +1,5 @@
+import Footer from '@/shared/components/Footer';
+import Header from '@/shared/components/Header';
 import React from 'react';
 
 export default function ShopLayout({
@@ -8,12 +10,17 @@ export default function ShopLayout({
     modal: React.ReactNode;
 }) {
     return (
-        <div className="relative min-h-screen">
-            {/* 기본 화면 영역 */}
-            {children}
+        <div className="flex min-h-screen flex-col">
+            {/* 쇼핑몰 전용 헤더 */}
+            <Header />
+            {/* 쇼핑몰 메인 컨텐츠 영역 */}
+            <main className="w-full flex-1">{children}</main>
 
             {/* @modal 슬롯 병렬 렌더링 영역 */}
             {modal}
+
+            {/* 쇼핑몰 전용 푸터 */}
+            <Footer />
         </div>
     );
 }
