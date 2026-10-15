@@ -1,8 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import { type IconType } from 'react-icons/lib';
 import { A11y, Navigation, Pagination, Scrollbar } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/react';
+import { Swiper, SwiperSlide, useSwiper } from 'swiper/react';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -27,6 +28,35 @@ type SlideBannerProps = BannerOptions & {
     width?: number | string;
     height?: number | string;
     banners: string[];
+    navIcons?: IconType[];
+};
+
+const NaviButtons = ({ icons }: { icons?: IconType[] }) => {
+    const swiper = useSwiper();
+
+    if (!icons || icons.length !== 2) return <></>;
+
+    const LeftIcon = icons[0];
+    const RightIcon = icons[1];
+
+    return (
+        <div className="mt-4 flex justify-end gap-2 navi-buttons">
+            <button
+                type="button"
+                onClick={() => swiper.slidePrev()}
+                className="rounded-full border p-2 hover:bg-gray-100"
+            >
+                <LeftIcon size={20} />
+            </button>
+            <button
+                type="button"
+                onClick={() => swiper.slideNext()}
+                className="rounded-full border p-2 hover:bg-gray-100"
+            >
+                <RightIcon size={20} />
+            </button>
+        </div>
+    );
 };
 
 export default function SlideBanner({
@@ -42,6 +72,7 @@ export default function SlideBanner({
     spaceBetween,
     slidesPerView,
     className,
+    navIcons,
 }: SlideBannerProps): React.JSX.Element {
     const modules: SwiperModule[] = [A11y];
     const swiperOptions: BannerOptions = {};
@@ -88,6 +119,7 @@ export default function SlideBanner({
                         />
                     </SwiperSlide>
                 ))}
+                <NaviButtons icons={navIcons} />
             </Swiper>
         )
     );

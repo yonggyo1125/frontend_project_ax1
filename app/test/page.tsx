@@ -1,5 +1,8 @@
+'use client';
+
 import SlideBanner from '@/shared/components/SlideBanner';
 import { Suspense } from 'react';
+import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
 
 const MOCK_BANNERS = [
     'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
@@ -15,7 +18,7 @@ const MOCK_BANNERS = [
 export default function TestPage() {
     return (
         <Suspense fallback={<div>로딩중...</div>}>
-            <SlideBanner banners={MOCK_BANNERS} width="full" height={400} />
+            <SlideBanner banners={MOCK_BANNERS} width="full" height={400} navIcons={[FaAngleLeft, FaAngleRight]}/>
         </Suspense>
     );
 }
