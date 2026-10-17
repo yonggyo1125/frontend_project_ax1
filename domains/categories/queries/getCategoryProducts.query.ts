@@ -1,3 +1,5 @@
+export const instant = false;
+
 import { getDescendantCategoryIds } from '@/domains/categories/utils/categoryTree';
 import { resolveFileUrl } from '@/domains/files/utils/resolveFileUrl';
 import { Product } from '@/domains/products/types/product.types';
@@ -17,14 +19,14 @@ export async function getCategoryProducts({
 }: GetCategoryProductsParams = {}): Promise<Product[]> {
     const supabase = createServerClient();
 
-    // 특정 카테고리가 선택된 경우 하위(2차, 3차) 카테고리 ID까지 모두 수집
+    // 1. 특정 카테고리가 선택된 경우 하위(2차, 3차) 카테고리 ID까지 모두 수집
     let targetCategoryIds: string[] | null = null;
     if (categoryId) {
         const tree = await getCategoryTree();
         targetCategoryIds = getDescendantCategoryIds(categoryId, tree);
     }
 
-    // category_products 매핑 테이블과 products 테이블 조인 조회
+    // 2. category_products 매핑 테이블과 products 테이블 조인 조회
     let mappingQuery = supabase
         .from('category_products')
         .select(
@@ -56,7 +58,7 @@ export async function getCategoryProducts({
         return [];
     }
 
-    // 중복 상품 제거 (여러 카테고리에 동시 매핑된 경우 가장 높은 우선순위 유지)
+    // 3. 중복 상품 제거 (여러 카테고리에 동시 매핑된 경우 가장 높은 우선순위 유지)
     const uniqueProductMap = new Map<
         string,
         {
@@ -96,7 +98,7 @@ export async function getCategoryProducts({
     const rawProducts = Array.from(uniqueProductMap.values());
     if (rawProducts.length === 0) return [];
 
-    // 수집된 상품들의 gid 목록으로 file_info 테이블에서 이미지 일괄 조회
+    // 4. 수집된 상품들의 gid 목록으로 file_info 테이블에서 이미지 일괄 조회 (N+1 쿼리 방지)
     const gids = rawProducts.map((p) => p.gid);
     const { data: fileRows } = await supabase
         .from('file_info')
@@ -120,13 +122,13 @@ export async function getCategoryProducts({
         }
     }
 
-    // 프론트엔드 Product 도메인 모델로 조립
+    // 5. 프론트엔드 Product 도메인 모델로 조립
     const products: Product[] = rawProducts.map((item) => ({
         ...item,
         images: imageMap.get(item.gid) || ['/placeholder.png'],
     }));
 
-    // 정렬 조건 적용
+    // 6. 정렬 조건 적용
     if (sort === 'price_asc') {
         products.sort((a, b) => a.price - b.price);
     } else if (sort === 'price_desc') {

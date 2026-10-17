@@ -1,4 +1,7 @@
+export const instant = false;
+
 import OrderReceipt from '@/domains/orders/components/OrderReceipt';
+import { Suspense } from 'react';
 
 export default async function OrderSuccessPage({
     searchParams,
@@ -9,7 +12,9 @@ export default async function OrderSuccessPage({
 
     return (
         <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
-            <OrderReceipt orderId={orderId} />
+            <Suspense>
+                <OrderReceipt orderId={orderId} />
+            </Suspense>
         </div>
     );
 }

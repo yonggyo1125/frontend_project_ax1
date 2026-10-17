@@ -1,13 +1,15 @@
 'use client';
 
 import { Category } from '@/domains/categories/types/category.types';
-import { MOCK_CATEGORIES } from '@/shared/mocks/mockData';
-import { useState } from 'react';
 import { FiChevronRight, FiFolder, FiPlus } from 'react-icons/fi';
 
-export default function CategoryTreeManager() {
-    const [categories] = useState<Category[]>(MOCK_CATEGORIES);
+interface CategoryTreeManagerProps {
+    categories: Category[];
+}
 
+export default function CategoryTreeManager({
+    categories,
+}: CategoryTreeManagerProps) {
     return (
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
@@ -43,7 +45,7 @@ export default function CategoryTreeManager() {
                                     {cat.name}
                                 </span>
                                 <span className="font-mono text-[10px] text-gray-400">
-                                    ({cat.id})
+                                    (depth: {cat.depth})
                                 </span>
                             </div>
                             <button className="text-xs text-red-500 hover:underline">
@@ -54,19 +56,36 @@ export default function CategoryTreeManager() {
                         {cat.children && (
                             <div className="mt-3 space-y-2 pl-6">
                                 {cat.children.map((sub) => (
-                                    <div
-                                        key={sub.id}
-                                        className="flex items-center justify-between rounded-xl bg-white p-2.5 text-xs shadow-sm"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <FiChevronRight className="h-3 w-3 text-gray-400" />
-                                            <span className="font-medium text-gray-700">
-                                                {sub.name}
-                                            </span>
+                                    <div key={sub.id} className="space-y-2">
+                                        <div className="flex items-center justify-between rounded-xl bg-white p-2.5 text-xs shadow-sm">
+                                            <div className="flex items-center gap-2">
+                                                <FiChevronRight className="h-3 w-3 text-gray-400" />
+                                                <span className="font-semibold text-gray-800">
+                                                    {sub.name}
+                                                </span>
+                                            </div>
+                                            <button className="text-[11px] text-gray-400 hover:text-red-500">
+                                                삭제
+                                            </button>
                                         </div>
-                                        <button className="text-[11px] text-gray-400 hover:text-red-500">
-                                            삭제
-                                        </button>
+
+                                        {sub.children && (
+                                            <div className="space-y-1.5 pl-6">
+                                                {sub.children.map((third) => (
+                                                    <div
+                                                        key={third.id}
+                                                        className="flex items-center justify-between rounded-lg border border-gray-100 bg-white/80 px-3 py-2 text-[11px]"
+                                                    >
+                                                        <span className="text-gray-600">
+                                                            └ {third.name}
+                                                        </span>
+                                                        <button className="text-[10px] text-gray-400 hover:text-red-500">
+                                                            삭제
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

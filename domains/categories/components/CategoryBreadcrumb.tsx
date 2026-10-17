@@ -1,5 +1,5 @@
+import { getCategoryTree } from '@/domains/categories/queries/getCategoryTree.query';
 import { Category } from '@/domains/categories/types/category.types';
-import { MOCK_CATEGORIES } from '@/shared/mocks/mockData';
 import Link from 'next/link';
 import { FiChevronRight, FiHome } from 'react-icons/fi';
 
@@ -7,7 +7,7 @@ interface CategoryBreadcrumbProps {
     categoryId?: string;
 }
 
-export default function CategoryBreadcrumb({
+export default async function CategoryBreadcrumb({
     categoryId,
 }: CategoryBreadcrumbProps) {
     if (!categoryId) {
@@ -26,7 +26,8 @@ export default function CategoryBreadcrumb({
         );
     }
 
-    // 트리 구조에서 부모 노드들을 역추적하여 경로를 탐색합니다.
+    const categories = await getCategoryTree();
+
     const findBreadcrumbs = (id: string, list: Category[]): Category[] => {
         for (const cat of list) {
             if (cat.id === id) return [cat];
@@ -38,7 +39,7 @@ export default function CategoryBreadcrumb({
         return [];
     };
 
-    const breadcrumbs = findBreadcrumbs(categoryId, MOCK_CATEGORIES);
+    const breadcrumbs = findBreadcrumbs(categoryId, categories);
 
     return (
         <nav className="flex items-center gap-1.5 text-xs text-gray-500">

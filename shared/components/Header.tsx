@@ -1,12 +1,12 @@
 import CategoryNav from '@/domains/categories/components/CategoryNav';
-import { Badge } from '@/shared/components/ui/badge';
+import { getCategoryTree } from '@/domains/categories/queries/getCategoryTree.query';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/utils/cn';
 import Link from 'next/link';
 import { FiGrid, FiShoppingBag, FiUser } from 'react-icons/fi';
 
-export default function Header() {
-    const mockCartItemCount = 2; // 임시 장바구니 수량
+export default async function Header() {
+    const categories = await getCategoryTree();
 
     return (
         <header
@@ -14,9 +14,7 @@ export default function Header() {
                 'sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur-md transition-all',
             )}
         >
-            {/* 기본 모바일: h-14, px-4 / md 이상: h-16, px-6 */}
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:h-16 md:px-6">
-                {/* 로고 영역 */}
                 <Link
                     href="/"
                     className="text-lg font-black tracking-tight text-gray-900 transition-colors hover:text-blue-600 md:text-xl"
@@ -24,9 +22,7 @@ export default function Header() {
                     Team Sparta
                 </Link>
 
-                {/* 네비게이션 영역 */}
                 <nav className="flex items-center gap-1 md:gap-3">
-                    {/* 전체 상품 링크 */}
                     <Link
                         href="/products"
                         aria-label="전체 상품"
@@ -36,25 +32,15 @@ export default function Header() {
                         <span className="hidden md:inline">전체 상품</span>
                     </Link>
 
-                    {/* 장바구니 링크 (카트 뱃지 포함) */}
                     <Link
                         href="/cart"
                         aria-label="장바구니"
-                        className="relative flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-blue-600 md:px-3 md:text-sm"
+                        className="flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-blue-600 md:px-3 md:text-sm"
                     >
                         <FiShoppingBag className="h-4 w-4 shrink-0" />
                         <span className="hidden md:inline">장바구니</span>
-                        {mockCartItemCount > 0 && (
-                            <Badge
-                                variant="destructive"
-                                className="h-4 min-w-4 px-1 text-[10px] leading-none md:ml-0.5"
-                            >
-                                {mockCartItemCount}
-                            </Badge>
-                        )}
                     </Link>
 
-                    {/* 로그인 버튼 */}
                     <Button
                         variant="outline"
                         size="sm"
@@ -71,8 +57,7 @@ export default function Header() {
                 </nav>
             </div>
 
-            {/* 중첩 카테고리 GNB Bar */}
-            <CategoryNav />
+            <CategoryNav categories={categories} />
         </header>
     );
 }

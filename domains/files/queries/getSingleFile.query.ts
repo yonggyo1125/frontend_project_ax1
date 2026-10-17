@@ -1,4 +1,4 @@
-import { FileInfo, FileLocation } from "../types/file.types";
+import { FileInfo, FileLocation } from '../types/file.types';
 import { getFilesByGid } from './getFilesByGid.query';
 
 export async function getSingleFile(

@@ -1,4 +1,6 @@
+export const instant = false;
 import CheckoutForm from '@/domains/orders/components/CheckoutForm';
+import { Suspense } from 'react';
 
 export default function CheckoutPage() {
     return (
@@ -6,7 +8,9 @@ export default function CheckoutPage() {
             <h1 className="mb-6 text-2xl font-black text-gray-900">
                 주문서 작성
             </h1>
-            <CheckoutForm />
+            <Suspense>
+                <CheckoutForm />
+            </Suspense>
         </div>
     );
 }

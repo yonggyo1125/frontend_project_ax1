@@ -1,7 +1,7 @@
-import { FileInfo } from "../types/file.types";
+import { FileInfo } from '../types/file.types';
 
 export function resolveFileUrl(
-    file: Pick<FileInfo, 'id' | 'original_name' | 'url'>
+    file: Pick<FileInfo, 'id' | 'original_name' | 'url'>,
 ): string {
     if (file.url) {
         return file.url;

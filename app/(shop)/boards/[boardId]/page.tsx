@@ -1,4 +1,9 @@
+export const instant = false;
+
 import PostList from '@/domains/boards/components/PostList';
+import { getBoardSetting } from '@/domains/boards/queries/getBoardSetting.query';
+import { getPostsByBoard } from '@/domains/boards/queries/getPostsByBoard.query';
+import { notFound } from 'next/navigation';
 
 export default async function BoardPage({
     params,
@@ -6,18 +11,23 @@ export default async function BoardPage({
     params: Promise<{ boardId: string }>;
 }) {
     const { boardId } = await params;
-    const mockPosts = [
-        {
-            id: 'post-1',
-            title: `${boardId} 게시판의 첫 번째 안내글입니다.`,
-            author_name: '관리자',
-            created_at: '2026-10-15T09:00:00Z',
-        },
-    ];
+
+    const [boardSetting, posts] = await Promise.all([
+        getBoardSetting(boardId),
+        getPostsByBoard(boardId),
+    ]);
+
+    if (!boardSetting) {
+        notFound();
+    }
 
     return (
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-            <PostList boardId={boardId} posts={mockPosts} />
+            <PostList
+                boardId={boardId}
+                boardSetting={boardSetting}
+                posts={posts}
+            />
         </div>
     );
 }
