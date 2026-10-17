@@ -1,9 +1,26 @@
-import RegisterForm from '@/domains/auth/components/RegisterForm';
+export const instant = false;
 
-export default function RegisterPage() {
+import RegisterForm from '@/domains/auth/components/RegisterForm';
+import { getCurrentUser } from '@/domains/auth/queries/getCurrentUser.query';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+
+export default async function RegisterPage() {
+    const { user } = await getCurrentUser();
+
+    if (user) {
+        redirect('/');
+    }
+
     return (
-        <div className="flex min-h-[calc(100vh-140px)] items-center justify-center px-4 py-12">
-            <RegisterForm />
+        <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+            <Suspense
+                fallback={
+                    <div className="h-96 w-full max-w-md animate-pulse rounded-3xl bg-gray-100" />
+                }
+            >
+                <RegisterForm />
+            </Suspense>
         </div>
     );
 }
