@@ -1,13 +1,24 @@
 'use client';
 
+import {
+    calculateCartSummary,
+    useCartStore,
+} from '@/domains/cart/store/cart.store';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { ActionState, INITIAL_ACTION_STATE } from '@/shared/types/action.types';
 import { cn } from '@/shared/utils/cn';
 import { formatPrice } from '@/shared/utils/formatPrice';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect } from 'react';
-import { FiAlertCircle, FiCreditCard, FiTruck } from 'react-icons/fi';
+import {
+    FiAlertCircle,
+    FiCreditCard,
+    FiShoppingBag,
+    FiTruck,
+} from 'react-icons/fi';
 
 async function checkoutAction(
     prevState: ActionState,
@@ -46,31 +57,63 @@ async function checkoutAction(
     }
 
     await new Promise((resolve) => setTimeout(resolve, 500));
+
     return {
         success: true,
-        data: { orderId: 'ORD-20261015-001' },
+        data: { orderId: 'ORD-20261019-001' },
     };
 }
 
 export default function CheckoutForm() {
     const router = useRouter();
+
+    // Zustand 스토어의 하이드레이션 완료 여부 구독
+    const hasHydrated = useCartStore((state) => state._hasHydrated);
+
+    const items = useCartStore((state) => state.items);
+    const clearCart = useCartStore((state) => state.clearCart);
+    const { itemsTotalAmount, shippingFee, totalAmount } =
+        calculateCartSummary(items);
+
     const [state, formAction, isPending] = useActionState(
         checkoutAction,
         INITIAL_ACTION_STATE,
     );
 
-    const itemsTotal = 81000;
-    const shippingFee = itemsTotal >= 50000 ? 0 : 3000;
-    const totalAmount = itemsTotal + shippingFee;
-
-    // 결제 생성 성공 시 완료 페이지로 전환
+    // 주문 생성 성공 시 장바구니를 비우고 완료 페이지로 전환
     useEffect(() => {
         if (state.success && (state.data as { orderId: string })?.orderId) {
-            router.push(
-                `/checkout/success?orderId=${(state.data as { orderId: string }).orderId}`,
-            );
+            const orderId = (state.data as { orderId: string }).orderId;
+            clearCart();
+            router.push(`/checkout/success?orderId=${orderId}`);
         }
-    }, [state, router]);
+    }, [state, clearCart, router]);
+
+    if (!hasHydrated) {
+        return (
+            <div className="h-96 w-full animate-pulse rounded-3xl bg-gray-100" />
+        );
+    }
+
+    if (items.length === 0 && !state.success) {
+        return (
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-white p-14 text-center">
+                <FiShoppingBag className="mb-3 h-10 w-10 text-gray-400" />
+                <p className="text-base font-bold text-gray-800">
+                    주문할 상품이 장바구니에 없습니다.
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                    먼저 상품을 장바구니에 담은 뒤 주문서를 작성해 주세요.
+                </p>
+                <Link
+                    href="/products"
+                    className="mt-5 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700"
+                >
+                    상품 목록으로 이동
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <form
@@ -79,6 +122,59 @@ export default function CheckoutForm() {
             className="grid grid-cols-1 gap-8 lg:grid-cols-3"
         >
             <div className="space-y-6 lg:col-span-2">
+                {/* 주문 상품 내역 확인 섹션 */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
+                        <div className="flex items-center gap-2">
+                            <FiShoppingBag className="h-5 w-5 text-blue-600" />
+                            <h2 className="text-base font-bold text-gray-900">
+                                주문 상품 정보 ({items.length}종)
+                            </h2>
+                        </div>
+                        <Link
+                            href="/cart"
+                            className="text-xs font-semibold text-blue-600 hover:underline"
+                        >
+                            장바구니 수정
+                        </Link>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                        {items.map((item) => (
+                            <div
+                                key={item.id}
+                                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                                        <Image
+                                            src={
+                                                item.image || '/placeholder.png'
+                                            }
+                                            alt={item.name}
+                                            fill
+                                            sizes="56px"
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-900">
+                                            {item.name}
+                                        </p>
+                                        <p className="mt-0.5 text-[11px] text-gray-500">
+                                            {formatPrice(item.price)} ×{' '}
+                                            {item.quantity}개
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="text-xs font-black text-gray-900">
+                                    {formatPrice(item.price * item.quantity)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 배송지 입력 섹션 */}
                 <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
                         <FiTruck className="h-5 w-5 text-blue-600" />
@@ -86,7 +182,6 @@ export default function CheckoutForm() {
                             배송 정보 입력
                         </h2>
                     </div>
-
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-1.5">
@@ -110,7 +205,6 @@ export default function CheckoutForm() {
                                     </p>
                                 )}
                             </div>
-
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-gray-700">
                                     연락처
@@ -167,10 +261,9 @@ export default function CheckoutForm() {
                                     <span>{state.errors.address}</span>
                                 </p>
                             )}
-
                             <Input
                                 name="detailAddress"
-                                placeholder="상세 주소를 입력하세요 (동, 호수 등)"
+                                placeholder="상세 주소를 입력하세요(동, 호수 등)"
                                 className={cn(
                                     'mt-2',
                                     state.errors?.detailAddress &&
@@ -187,6 +280,7 @@ export default function CheckoutForm() {
                     </div>
                 </div>
 
+                {/* 결제 수단 영역 */}
                 <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
                         <FiCreditCard className="h-5 w-5 text-blue-600" />
@@ -207,6 +301,7 @@ export default function CheckoutForm() {
                 </div>
             </div>
 
+            {/* 우측 최종 결제 금액 요약 */}
             <div className="lg:col-span-1">
                 <div className="sticky top-24 space-y-4 rounded-2xl border border-gray-100 bg-gray-50/80 p-6 shadow-sm">
                     <h3 className="text-sm font-black text-gray-900">
@@ -216,7 +311,7 @@ export default function CheckoutForm() {
                         <div className="flex justify-between">
                             <span>총 상품금액</span>
                             <span className="font-semibold text-gray-900">
-                                {formatPrice(itemsTotal)}
+                                {formatPrice(itemsTotalAmount)}
                             </span>
                         </div>
                         <div className="flex justify-between">
@@ -226,7 +321,6 @@ export default function CheckoutForm() {
                             </span>
                         </div>
                     </div>
-
                     <div className="border-t border-gray-200 pt-3">
                         <div className="flex items-baseline justify-between">
                             <span className="text-xs font-bold text-gray-900">
@@ -237,7 +331,6 @@ export default function CheckoutForm() {
                             </span>
                         </div>
                     </div>
-
                     <div className="pt-2">
                         <label className="flex items-start gap-2 text-xs text-gray-600">
                             <input
@@ -257,7 +350,6 @@ export default function CheckoutForm() {
                             </p>
                         )}
                     </div>
-
                     <Button
                         type="submit"
                         disabled={isPending}

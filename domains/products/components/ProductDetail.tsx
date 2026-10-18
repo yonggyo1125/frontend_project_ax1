@@ -1,12 +1,15 @@
 'use client';
 
+import { useCartStore } from '@/domains/cart/store/cart.store';
 import { Product } from '@/domains/products/types/product.types';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/utils/cn';
 import { formatPrice } from '@/shared/utils/formatPrice';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
+    FiCheck,
     FiCreditCard,
     FiExternalLink,
     FiMinus,
@@ -23,10 +26,42 @@ export default function ProductDetail({
     product,
     isModal = false,
 }: ProductDetailProps) {
+    const router = useRouter();
+    const addItem = useCartStore((state) => state.addItem);
+
     const [quantity, setQuantity] = useState(1);
+    const [isAddedFeedback, setIsAddedFeedback] = useState(false);
 
     const handleDecrease = () => setQuantity((prev) => Math.max(1, prev - 1));
     const handleIncrease = () => setQuantity((prev) => prev + 1);
+
+    // 장바구니에 현재 상품 및 수량 추가
+    const handleAddToCart = () => {
+        addItem({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.images[0] || '/placeholder.png',
+            quantity,
+        });
+
+        setIsAddedFeedback(true);
+        setTimeout(() => {
+            setIsAddedFeedback(false);
+        }, 1500);
+    };
+
+    // 바로 구매 - 장바구니에 담고 즉시 주문서(/checkout) 페이지로 이동
+    const handleBuyNow = () => {
+        addItem({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.images[0] || '/placeholder.png',
+            quantity,
+        });
+        router.push('/checkout');
+    };
 
     return (
         <div className="flex flex-col justify-between space-y-5">
@@ -128,24 +163,30 @@ export default function ProductDetail({
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-11 w-full gap-1.5 border-gray-300 font-bold text-gray-700 hover:bg-gray-50"
-                    onClick={() =>
-                        alert(
-                            `장바구니에 [${product.name}] ${quantity}개를 담았습니다.`,
-                        )
-                    }
+                    onClick={handleAddToCart}
+                    className={cn(
+                        'h-11 w-full gap-1.5 border-gray-300 font-bold text-gray-700 transition-all hover:bg-gray-50',
+                        isAddedFeedback &&
+                            'border-green-600 bg-green-50 text-green-700 hover:bg-green-50',
+                    )}
                 >
-                    <FiShoppingBag className="h-4 w-4" />
-                    <span>장바구니</span>
+                    {isAddedFeedback ? (
+                        <>
+                            <FiCheck className="h-4 w-4" />
+                            <span>담기 완료!</span>
+                        </>
+                    ) : (
+                        <>
+                            <FiShoppingBag className="h-4 w-4" />
+                            <span>장바구니</span>
+                        </>
+                    )}
                 </Button>
+
                 <Button
                     type="button"
+                    onClick={handleBuyNow}
                     className="h-11 w-full gap-1.5 bg-blue-600 font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700"
-                    onClick={() =>
-                        alert(
-                            `[${product.name}] 바로 주문서 작성 단계로 이동합니다.`,
-                        )
-                    }
                 >
                     <FiCreditCard className="h-4 w-4" />
                     <span>바로 구매</span>

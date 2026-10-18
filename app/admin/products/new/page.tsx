@@ -7,6 +7,7 @@ import { ActionState, INITIAL_ACTION_STATE } from '@/shared/types/action.types';
 import { cn } from '@/shared/utils/cn';
 import { useActionState, useEffect } from 'react';
 import { FiAlertCircle } from 'react-icons/fi';
+import { v4 as uuid4 } from 'uuid';
 
 async function createProductAction(
     prevState: ActionState,
@@ -30,8 +31,6 @@ async function createProductAction(
         message: `신규 상품 [${name}] 등록이 완료되었습니다.`,
     };
 }
-
-const CURRENT_TIME = Date.now();
 
 export default function AdminNewProductPage() {
     const [state, formAction, isPending] = useActionState(
@@ -106,7 +105,7 @@ export default function AdminNewProductPage() {
                         상품 대표/갤러리 이미지 (다중 업로드)
                     </label>
                     <FileUpload
-                        gid={`prod-new-${CURRENT_TIME}`}
+                        gid={`prod-${uuid4()}`}
                         location="product_main"
                         multiple={true}
                     />

@@ -1,8 +1,9 @@
 'use server';
 
-import { ActionState } from '@/shared/types/action.types';
 import { createServerClient } from '@/shared/lib/supabase';
+import { ActionState } from '@/shared/types/action.types';
 import { revalidatePath } from 'next/cache';
+import { v4 as uuid4 } from 'uuid';
 
 export async function createPostAction(
     boardId: string,
@@ -11,7 +12,7 @@ export async function createPostAction(
 ): Promise<ActionState> {
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
-    const gid = (formData.get('gid') as string) || `post-${Date.now()}`;
+    const gid = (formData.get('gid') as string) || `post-${uuid4()}`;
     const errors: Record<string, string> = {};
 
     if (!title || !title.trim()) {

@@ -1,17 +1,12 @@
 import LogoutButton from '@/domains/auth/components/LogoutButton';
 import { getCurrentUser } from '@/domains/auth/queries/getCurrentUser.query';
+import CartBadge from '@/domains/cart/components/CartBadge';
 import CategoryNav from '@/domains/categories/components/CategoryNav';
 import { getCategoryTree } from '@/domains/categories/queries/getCategoryTree.query';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/utils/cn';
 import Link from 'next/link';
-import {
-    FiGrid,
-    FiMessageSquare,
-    FiSettings,
-    FiShoppingBag,
-    FiUser,
-} from 'react-icons/fi';
+import { FiGrid, FiMessageSquare, FiSettings, FiUser } from 'react-icons/fi';
 
 export default async function Header() {
     const [categories, { user, isAdmin }] = await Promise.all([
@@ -52,14 +47,8 @@ export default async function Header() {
                         <span className="hidden md:inline">커뮤니티</span>
                     </Link>
 
-                    <Link
-                        href="/cart"
-                        aria-label="장바구니"
-                        className="flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-blue-600 md:px-3 md:text-sm"
-                    >
-                        <FiShoppingBag className="h-4 w-4 shrink-0" />
-                        <span className="hidden md:inline">장바구니</span>
-                    </Link>
+                    {/* 실시간 장바구니 수량 뱃지 연동 */}
+                    <CartBadge />
 
                     {/* 관리자(admin) 전용 관리 센터 진입 버튼 */}
                     {isAdmin && (

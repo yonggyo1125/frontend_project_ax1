@@ -35,6 +35,7 @@ export default async function BoardPostEditPage({
                 boardId={boardId}
                 boardName={boardSetting.name}
                 postId={post.id}
+                gid={post.gid}
                 initialData={{
                     title: post.title,
                     content: post.content,

@@ -22,9 +22,11 @@ export interface CartSummaryInfo {
 
 export interface CartState {
     items: CartItem[];
+    _hasHydrated: boolean; // 클라이언트 하이드레이션 완료 여부 상태
 }
 
 export interface CartActions {
+    setHasHydrated: (state: boolean) => void; // 하이드레이션 상태 업데이트 액션
     addItem: (item: AddCartItemInput) => void;
     removeItem: (productId: string) => void;
     updateQuantity: (productId: string, quantity: number) => void;

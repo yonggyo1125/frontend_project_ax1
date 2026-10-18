@@ -18,6 +18,7 @@ interface PostFormProps {
     boardId: string;
     boardName?: string;
     postId?: string;
+    gid?: string;
     initialData?: {
         title: string;
         content: string;
@@ -28,12 +29,13 @@ export default function PostForm({
     boardId,
     boardName,
     postId,
+    gid,
     initialData,
 }: PostFormProps) {
     const router = useRouter();
     const isEdit = Boolean(postId);
 
-    const currentGid = useMemo(() => `post-temp-${uuid4()}`, []);
+    const currentGid = useMemo(() => (gid ? gid : `post-${uuid4()}`), [gid]);
 
     // 등록 또는 수정 모드에 따른 Server Action 바인딩
     const targetAction = isEdit
