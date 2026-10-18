@@ -1,12 +1,18 @@
+import LogoutButton from '@/domains/auth/components/LogoutButton';
+import { getCurrentUser } from '@/domains/auth/queries/getCurrentUser.query';
+import CartBadge from '@/domains/cart/components/CartBadge';
 import CategoryNav from '@/domains/categories/components/CategoryNav';
-import { Badge } from '@/shared/components/ui/badge';
+import { getCategoryTree } from '@/domains/categories/queries/getCategoryTree.query';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/utils/cn';
 import Link from 'next/link';
-import { FiGrid, FiShoppingBag, FiUser } from 'react-icons/fi';
+import { FiGrid, FiMessageSquare, FiSettings, FiUser } from 'react-icons/fi';
 
-export default function Header() {
-    const mockCartItemCount = 2; // 임시 장바구니 수량
+export default async function Header() {
+    const [categories, { user, isAdmin }] = await Promise.all([
+        getCategoryTree(),
+        getCurrentUser(),
+    ]);
 
     return (
         <header
@@ -14,9 +20,7 @@ export default function Header() {
                 'sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur-md transition-all',
             )}
         >
-            {/* 기본 모바일: h-14, px-4 / md 이상: h-16, px-6 */}
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:h-16 md:px-6">
-                {/* 로고 영역 */}
                 <Link
                     href="/"
                     className="text-lg font-black tracking-tight text-gray-900 transition-colors hover:text-blue-600 md:text-xl"
@@ -24,9 +28,7 @@ export default function Header() {
                     Team Sparta
                 </Link>
 
-                {/* 네비게이션 영역 */}
-                <nav className="flex items-center gap-1 md:gap-3">
-                    {/* 전체 상품 링크 */}
+                <nav className="flex items-center gap-1 md:gap-2.5">
                     <Link
                         href="/products"
                         aria-label="전체 상품"
@@ -36,43 +38,70 @@ export default function Header() {
                         <span className="hidden md:inline">전체 상품</span>
                     </Link>
 
-                    {/* 장바구니 링크 (카트 뱃지 포함) */}
                     <Link
-                        href="/cart"
-                        aria-label="장바구니"
-                        className="relative flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-blue-600 md:px-3 md:text-sm"
+                        href="/boards/notice"
+                        aria-label="커뮤니티 게시판"
+                        className="flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-blue-600 md:px-3 md:text-sm"
                     >
-                        <FiShoppingBag className="h-4 w-4 shrink-0" />
-                        <span className="hidden md:inline">장바구니</span>
-                        {mockCartItemCount > 0 && (
-                            <Badge
-                                variant="destructive"
-                                className="h-4 min-w-4 px-1 text-[10px] leading-none md:ml-0.5"
-                            >
-                                {mockCartItemCount}
-                            </Badge>
-                        )}
+                        <FiMessageSquare className="h-4 w-4 shrink-0" />
+                        <span className="hidden md:inline">커뮤니티</span>
                     </Link>
 
-                    {/* 로그인 버튼 */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 px-2.5 md:px-3"
-                    >
+                    {/* 실시간 장바구니 수량 뱃지 연동 */}
+                    <CartBadge />
+
+                    {/* 관리자(admin) 전용 관리 센터 진입 버튼 */}
+                    {isAdmin && (
                         <Link
-                            href="/login"
-                            className="flex items-center gap-1.5"
+                            href="/admin/categories"
+                            className="flex h-9 items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 md:px-3"
                         >
-                            <FiUser className="h-3.5 w-3.5" />
-                            <span className="text-xs md:text-sm">로그인</span>
+                            <FiSettings className="h-3.5 w-3.5 shrink-0" />
+                            <span className="hidden sm:inline">관리자</span>
                         </Link>
-                    </Button>
+                    )}
+
+                    {/* 로그인 세션 유무에 따른 조건부 UI 분기 */}
+                    {user ? (
+                        <div className="flex items-center gap-1.5 pl-1">
+                            <Link
+                                href="/profile"
+                                className="flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50/80 px-2.5 text-xs font-bold text-gray-800 transition-colors hover:border-blue-600 hover:bg-white md:px-3"
+                            >
+                                <FiUser className="h-3.5 w-3.5 text-blue-600" />
+                                <span>{user.name}님</span>
+                            </Link>
+                            <LogoutButton />
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 pl-1">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 px-2.5 md:px-3"
+                            >
+                                <Link
+                                    href="/login"
+                                    className="flex items-center gap-1.5"
+                                >
+                                    <FiUser className="h-3.5 w-3.5" />
+                                    <span className="text-xs md:text-sm">
+                                        로그인
+                                    </span>
+                                </Link>
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="hidden h-9 bg-gray-900 px-3 text-xs font-bold text-white hover:bg-gray-800 sm:inline-flex"
+                            >
+                                <Link href="/register">회원가입</Link>
+                            </Button>
+                        </div>
+                    )}
                 </nav>
             </div>
 
-            {/* 중첩 카테고리 GNB Bar */}
-            <CategoryNav />
+            <CategoryNav categories={categories} />
         </header>
     );
 }

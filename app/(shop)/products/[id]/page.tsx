@@ -3,7 +3,7 @@ export const instant = false;
 import CategoryBreadcrumb from '@/domains/categories/components/CategoryBreadcrumb';
 import ImageGallery from '@/domains/files/components/ImageGallery';
 import ProductDetail from '@/domains/products/components/ProductDetail';
-import { MOCK_PRODUCTS } from '@/shared/mocks/mockData';
+import { getProductById } from '@/domains/products/queries/getProductById.query';
 import { notFound } from 'next/navigation';
 
 interface ProductPageProps {
@@ -12,7 +12,7 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
     const { id } = await params;
-    const product = MOCK_PRODUCTS.find((p) => p.id === id);
+    const product = await getProductById(id);
 
     if (!product) {
         notFound();

@@ -24,17 +24,19 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
 
     return (
         <div className="flex flex-col gap-4">
-            {/* 대표 메인 이미지 (Next.js Image 최적화 적용) */}
+            {/* 대표 메인 이미지 */}
             <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-inner">
                 <Image
                     src={selectedImage}
                     alt={title}
                     fill
                     priority
+                    unoptimized={selectedImage.startsWith('/files/')}
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover transition-all duration-300"
                 />
             </div>
+
             {images.length > 1 && (
                 <div className="no-scrollbar flex items-center gap-3 overflow-x-auto pb-2">
                     {images.map((img, idx) => (
@@ -53,6 +55,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
                                 src={img}
                                 alt={`${title} 썸네일 ${idx + 1}`}
                                 fill
+                                unoptimized={img.startsWith('/files/')}
                                 sizes="80px"
                                 className="object-cover"
                             />

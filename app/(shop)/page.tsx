@@ -1,15 +1,19 @@
+export const instant = false;
+
+import { getCategoryProducts } from '@/domains/categories/queries/getCategoryProducts.query';
 import ProductGrid from '@/domains/products/components/ProductGrid';
 import { Button } from '@/shared/components/ui/button';
-import { MOCK_PRODUCTS } from '@/shared/mocks/mockData';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { FiArrowRight } from 'react-icons/fi';
-
-export default function ShopMainPage() {
-    const recommendedProducts = MOCK_PRODUCTS.slice(0, 4);
+export default async function ShopMainPage() {
+    const recommendedProducts = await getCategoryProducts({
+        sort: 'priority',
+        limit: 4,
+    });
 
     return (
         <div className="space-y-12 pb-16">
-            {/* 기획전 메인 히어로 배너 */}
             <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-slate-800 to-blue-900 py-16 text-white md:py-24">
                 <div className="mx-auto max-w-7xl px-4 md:px-6">
                     <div className="max-w-2xl space-y-4">
@@ -29,7 +33,10 @@ export default function ShopMainPage() {
                                 size="lg"
                                 className="gap-2 bg-blue-600 font-bold hover:bg-blue-500"
                             >
-                                <Link href="/products">
+                                <Link
+                                    href="/products"
+                                    className="flex items-center gap-2"
+                                >
                                     <span>컬렉션 보러가기</span>
                                     <FiArrowRight className="h-4 w-4" />
                                 </Link>
@@ -39,7 +46,6 @@ export default function ShopMainPage() {
                 </div>
             </section>
 
-            {/* 추천 상품 그리드 영역 */}
             <section className="mx-auto max-w-7xl px-4 md:px-6">
                 <div className="mb-6 flex items-end justify-between">
                     <div>
@@ -57,8 +63,9 @@ export default function ShopMainPage() {
                         전체보기
                     </Link>
                 </div>
-
-                <ProductGrid products={recommendedProducts} />
+                <Suspense>
+                    <ProductGrid products={recommendedProducts} />
+                </Suspense>
             </section>
         </div>
     );
