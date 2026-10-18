@@ -5,6 +5,10 @@ import {
     useCartStore,
 } from '@/domains/cart/store/cart.store';
 import { createOrderAction } from '@/domains/orders/actions/createOrder.action';
+import TossPaymentWidget, {
+    TossPaymentWidgetHandle,
+} from '@/domains/orders/components/TossPaymentWidget';
+import { formatOrderName } from '@/domains/orders/services/toss.service';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { INITIAL_ACTION_STATE } from '@/shared/types/action.types';
@@ -12,8 +16,7 @@ import { cn } from '@/shared/utils/cn';
 import { formatPrice } from '@/shared/utils/formatPrice';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useMemo } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import {
     FiAlertCircle,
     FiCreditCard,
@@ -21,16 +24,31 @@ import {
     FiTruck,
 } from 'react-icons/fi';
 
-export default function CheckoutForm() {
-    const router = useRouter();
+interface CheckoutFormProps {
+    customerKey?: string;
+    customerEmail?: string;
+    defaultRecipientName?: string;
+}
 
+export default function CheckoutForm({
+    customerKey,
+    customerEmail,
+    defaultRecipientName = '',
+}: CheckoutFormProps) {
     // Zustand 스토어의 하이드레이션 완료 여부 및 장바구니 품목 구독
     const hasHydrated = useCartStore((state) => state._hasHydrated);
     const items = useCartStore((state) => state.items);
-    const clearCart = useCartStore((state) => state.clearCart);
 
     const { itemsTotalAmount, shippingFee, totalAmount } =
         calculateCartSummary(items);
+
+    const paymentWidgetRef = useRef<TossPaymentWidgetHandle>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+    const processedOrderIdRef = useRef<string | null>(null);
+
+    const [isWidgetReady, setIsWidgetReady] = useState(false);
+    const [isRequestingPayment, setIsRequestingPayment] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
 
     // Server Action 전송용 품목 JSON 직렬화
     const serializedItems = useMemo(
@@ -46,23 +64,70 @@ export default function CheckoutForm() {
         [items],
     );
 
+    const orderName = useMemo(() => formatOrderName(items), [items]);
+
     const [state, formAction, isPending] = useActionState(
         createOrderAction,
         INITIAL_ACTION_STATE,
     );
 
-    // 원자성 가주문 생성 성공 시 장바구니를 비우고 완료 페이지로 전환
+    // 원자성 가주문(PENDING) 생성 성공 시 토스페이먼츠 결제창 호출
     useEffect(() => {
         const resultData = state.data as
             { orderId?: string; totalAmount?: number } | undefined;
 
-        if (state.success && resultData?.orderId) {
-            clearCart();
-            router.push(
-                `/checkout/success?orderId=${resultData.orderId}&amount=${resultData.totalAmount ?? totalAmount}`,
-            );
+        if (
+            state.success &&
+            resultData?.orderId &&
+            processedOrderIdRef.current !== resultData.orderId
+        ) {
+            processedOrderIdRef.current = resultData.orderId;
+
+            const triggerTossPayment = async () => {
+                setPaymentError(null);
+                setIsRequestingPayment(true);
+
+                try {
+                    const formElement = formRef.current;
+                    const formData = formElement
+                        ? new FormData(formElement)
+                        : null;
+                    const recipientName =
+                        (formData?.get('recipientName') as string)?.trim() ||
+                        defaultRecipientName ||
+                        '주문자';
+                    const phone =
+                        (formData?.get('phone') as string)?.trim() || '';
+
+                    await paymentWidgetRef.current?.requestPayment({
+                        orderId: resultData.orderId!,
+                        orderName,
+                        customerName: recipientName,
+                        customerEmail,
+                        customerMobilePhone: phone,
+                    });
+                } catch (err) {
+                    // 사용자가 결제창을 닫거나 취소한 경우 다시 결제 시도할 수 있도록 상태 복구
+                    processedOrderIdRef.current = null;
+                    const errMsg =
+                        err instanceof Error
+                            ? err.message
+                            : '결제 요청이 취소되었거나 오류가 발생했습니다.';
+                    setPaymentError(errMsg);
+                } finally {
+                    setIsRequestingPayment(false);
+                }
+            };
+
+            triggerTossPayment();
         }
-    }, [state.success, state.data, totalAmount, clearCart, router]);
+    }, [
+        state.success,
+        state.data,
+        orderName,
+        customerEmail,
+        defaultRecipientName,
+    ]);
 
     if (!hasHydrated) {
         return (
@@ -90,8 +155,11 @@ export default function CheckoutForm() {
         );
     }
 
+    const isSubmitting = isPending || isRequestingPayment;
+
     return (
         <form
+            ref={formRef}
             action={formAction}
             noValidate
             className="grid grid-cols-1 gap-8 lg:grid-cols-3"
@@ -107,10 +175,10 @@ export default function CheckoutForm() {
             <input type="hidden" name="totalAmount" value={totalAmount} />
 
             <div className="space-y-6 lg:col-span-2">
-                {state.message && !state.success && (
+                {((state.message && !state.success) || paymentError) && (
                     <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-600">
                         <FiAlertCircle className="h-4 w-4 shrink-0" />
-                        <span>{state.message}</span>
+                        <span>{paymentError || state.message}</span>
                     </div>
                 )}
 
@@ -190,6 +258,7 @@ export default function CheckoutForm() {
                                 </label>
                                 <Input
                                     name="recipientName"
+                                    defaultValue={defaultRecipientName}
                                     placeholder="홍길동"
                                     className={cn(
                                         state.errors?.recipientName &&
@@ -290,24 +359,21 @@ export default function CheckoutForm() {
                     </div>
                 </div>
 
-                {/* 결제 수단 영역 */}
+                {/* 토스페이먼츠 결제 위젯 영역 */}
                 <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
                         <FiCreditCard className="h-5 w-5 text-blue-600" />
                         <h2 className="text-base font-bold text-gray-900">
-                            결제 수단
+                            결제 수단 선택
                         </h2>
                     </div>
-                    {/* 토스 결제 위젯 플레이스홀더 */}
-                    <div className="flex h-44 flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/70 p-6 text-center">
-                        <span className="font-bold text-gray-800">
-                            Toss Payments 결제 위젯 영역
-                        </span>
-                        <p className="mt-1 text-xs text-gray-400">
-                            9일 차 토스페이먼츠 연동 시 카드/간편결제 UI가 자동
-                            렌더링됩니다.
-                        </p>
-                    </div>
+
+                    <TossPaymentWidget
+                        ref={paymentWidgetRef}
+                        amount={totalAmount}
+                        customerKey={customerKey}
+                        onReadyChange={setIsWidgetReady}
+                    />
                 </div>
             </div>
 
@@ -331,7 +397,6 @@ export default function CheckoutForm() {
                             </span>
                         </div>
                     </div>
-
                     <div className="border-t border-gray-200 pt-3">
                         <div className="flex items-baseline justify-between">
                             <span className="text-xs font-bold text-gray-900">
@@ -365,12 +430,16 @@ export default function CheckoutForm() {
 
                     <Button
                         type="submit"
-                        disabled={isPending}
-                        className="h-12 w-full bg-blue-600 font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700"
+                        disabled={isSubmitting || !isWidgetReady}
+                        className="h-12 w-full bg-blue-600 font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50"
                     >
                         {isPending
                             ? '원자성 주문서 생성 중...'
-                            : `${formatPrice(totalAmount)} 결제하기`}
+                            : isRequestingPayment
+                              ? '토스 결제창 호출 중...'
+                              : !isWidgetReady
+                                ? '결제 위젯 준비 중...'
+                                : `${formatPrice(totalAmount)} 결제하기`}
                     </Button>
                 </div>
             </div>

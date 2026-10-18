@@ -98,3 +98,36 @@ export interface OrderAmountValidationResult {
     serverTotalAmount: number;
     snapshotItems: OrderItemSnapshot[];
 }
+
+// 토스 결제 승인 요청 입력 파라미터 (/checkout/success 콜백 쿼리 대응)
+export interface ConfirmPaymentInput {
+    paymentKey: string;
+    orderId: string;
+    amount: number;
+}
+
+// 토스페이먼츠 v1/payments/confirm API 응답 스펙
+export interface TossPaymentConfirmResponse {
+    paymentKey: string;
+    orderId: string;
+    orderName?: string;
+    status: TossPaymentStatus;
+    method?: string;
+    totalAmount: number;
+    suppliedAmount?: number;
+    vat?: number;
+    taxFreeAmount?: number;
+    requestedAt?: string;
+    approvedAt?: string;
+    lastTransactionKey?: string | null;
+    receipt?: {
+        url?: string;
+    } | null;
+    [key: string]: unknown;
+}
+
+// confirmPaymentAction 반환 데이터 규격
+export interface ConfirmPaymentResultData {
+    order: Order;
+    alreadyPaid?: boolean;
+}
