@@ -6,14 +6,15 @@ import { Suspense } from 'react';
 export default async function OrderSuccessPage({
     searchParams,
 }: {
-    searchParams: Promise<{ orderId?: string }>;
+    searchParams: Promise<{ orderId?: string; amount?: string }>;
 }) {
-    const { orderId = 'ORD-20261015-001' } = await searchParams;
+    const { orderId = 'ORD-20261020-001', amount } = await searchParams;
+    const parsedAmount = amount ? Number(amount) : 81000;
 
     return (
         <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
             <Suspense>
-                <OrderReceipt orderId={orderId} />
+                <OrderReceipt orderId={orderId} amount={parsedAmount} />
             </Suspense>
         </div>
     );

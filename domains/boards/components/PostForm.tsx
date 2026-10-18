@@ -1,10 +1,9 @@
 'use client';
 
-import { v4 as uuid4 } from 'uuid';
-
 import { createPostAction } from '@/domains/boards/actions/createPost.action';
 import { updatePostAction } from '@/domains/boards/actions/updatePost.action';
 import FileUpload from '@/domains/files/components/FileUpload';
+import { FileInfo } from '@/domains/files/types/file.types';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import WysiwygEditor from '@/shared/components/WysiwygEditor';
@@ -13,15 +12,17 @@ import { cn } from '@/shared/utils/cn';
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useMemo } from 'react';
 import { FiAlertCircle } from 'react-icons/fi';
+import { v4 as uuid4 } from 'uuid';
 
 interface PostFormProps {
     boardId: string;
     boardName?: string;
     postId?: string;
-    gid?: string;
     initialData?: {
+        gid?: string;
         title: string;
         content: string;
+        attachments?: FileInfo[];
     };
 }
 
@@ -29,15 +30,16 @@ export default function PostForm({
     boardId,
     boardName,
     postId,
-    gid,
     initialData,
 }: PostFormProps) {
     const router = useRouter();
     const isEdit = Boolean(postId);
 
-    const currentGid = useMemo(() => (gid ? gid : `post-${uuid4()}`), [gid]);
+    const currentGid = useMemo(
+        () => initialData?.gid || `post-${uuid4()}`,
+        [initialData?.gid],
+    );
 
-    // 등록 또는 수정 모드에 따른 Server Action 바인딩
     const targetAction = isEdit
         ? updatePostAction.bind(null, boardId, postId!)
         : createPostAction.bind(null, boardId);
@@ -49,14 +51,15 @@ export default function PostForm({
 
     useEffect(() => {
         if (state.success) {
-            alert(
-                `게시글이 성공적으로 ${isEdit ? '수정' : '등록'} 되었습니다.`,
+            alert(`게시글이 성공적으로 ${isEdit ? '수정' : '등록'}되었습니다.`);
+            router.push(
+                isEdit ? `/boards/${boardId}/${postId}` : `/boards/${boardId}`,
             );
-            router.push(`/boards/${boardId}`);
+            router.refresh();
         } else if (state.message) {
             alert(state.message);
         }
-    }, [state.success, state.message, isEdit, boardId, router]);
+    }, [state.success, state.message, isEdit, boardId, postId, router]);
 
     return (
         <form
@@ -130,6 +133,7 @@ export default function PostForm({
                         gid={currentGid}
                         location="post_attach"
                         multiple={true}
+                        initialFiles={initialData?.attachments}
                     />
                 </div>
             </div>

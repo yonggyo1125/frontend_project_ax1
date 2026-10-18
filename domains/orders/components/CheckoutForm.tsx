@@ -4,15 +4,16 @@ import {
     calculateCartSummary,
     useCartStore,
 } from '@/domains/cart/store/cart.store';
+import { createOrderAction } from '@/domains/orders/actions/createOrder.action';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-import { ActionState, INITIAL_ACTION_STATE } from '@/shared/types/action.types';
+import { INITIAL_ACTION_STATE } from '@/shared/types/action.types';
 import { cn } from '@/shared/utils/cn';
 import { formatPrice } from '@/shared/utils/formatPrice';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useMemo } from 'react';
 import {
     FiAlertCircle,
     FiCreditCard,
@@ -20,74 +21,48 @@ import {
     FiTruck,
 } from 'react-icons/fi';
 
-async function checkoutAction(
-    prevState: ActionState,
-    formData: FormData,
-): Promise<ActionState> {
-    const recipientName = formData.get('recipientName') as string;
-    const phone = formData.get('phone') as string;
-    const address = formData.get('address') as string;
-    const detailAddress = formData.get('detailAddress') as string;
-    const paymentAgreed = formData.get('paymentAgreed') as string;
-
-    const errors: Record<string, string> = {};
-    const phoneRegex = /^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$/;
-
-    if (!recipientName || !recipientName.trim()) {
-        errors.recipientName = '수령인 이름을 입력해 주세요.';
-    }
-    if (!phone || !phone.trim()) {
-        errors.phone = '연락처를 입력해 주세요.';
-    } else if (!phoneRegex.test(phone.trim())) {
-        errors.phone =
-            '올바른 휴대폰 번호 형식을 입력해 주세요. (예: 010-1234-5678)';
-    }
-    if (!address || !address.trim()) {
-        errors.address = '기본 배송지 주소를 입력해 주세요.';
-    }
-    if (!detailAddress || !detailAddress.trim()) {
-        errors.detailAddress = '상세 주소를 입력해 주세요.';
-    }
-    if (!paymentAgreed) {
-        errors.paymentAgreed = '주문 및 결제 필수 약관에 동의해야 합니다.';
-    }
-
-    if (Object.keys(errors).length > 0) {
-        return { success: false, errors };
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    return {
-        success: true,
-        data: { orderId: 'ORD-20261019-001' },
-    };
-}
-
 export default function CheckoutForm() {
     const router = useRouter();
 
-    // Zustand 스토어의 하이드레이션 완료 여부 구독
+    // Zustand 스토어의 하이드레이션 완료 여부 및 장바구니 품목 구독
     const hasHydrated = useCartStore((state) => state._hasHydrated);
-
     const items = useCartStore((state) => state.items);
     const clearCart = useCartStore((state) => state.clearCart);
+
     const { itemsTotalAmount, shippingFee, totalAmount } =
         calculateCartSummary(items);
 
+    // Server Action 전송용 품목 JSON 직렬화
+    const serializedItems = useMemo(
+        () =>
+            JSON.stringify(
+                items.map((item) => ({
+                    productId: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                })),
+            ),
+        [items],
+    );
+
     const [state, formAction, isPending] = useActionState(
-        checkoutAction,
+        createOrderAction,
         INITIAL_ACTION_STATE,
     );
 
-    // 주문 생성 성공 시 장바구니를 비우고 완료 페이지로 전환
+    // 원자성 가주문 생성 성공 시 장바구니를 비우고 완료 페이지로 전환
     useEffect(() => {
-        if (state.success && (state.data as { orderId: string })?.orderId) {
-            const orderId = (state.data as { orderId: string }).orderId;
+        const resultData = state.data as
+            { orderId?: string; totalAmount?: number } | undefined;
+
+        if (state.success && resultData?.orderId) {
             clearCart();
-            router.push(`/checkout/success?orderId=${orderId}`);
+            router.push(
+                `/checkout/success?orderId=${resultData.orderId}&amount=${resultData.totalAmount ?? totalAmount}`,
+            );
         }
-    }, [state, clearCart, router]);
+    }, [state.success, state.data, totalAmount, clearCart, router]);
 
     if (!hasHydrated) {
         return (
@@ -121,7 +96,24 @@ export default function CheckoutForm() {
             noValidate
             className="grid grid-cols-1 gap-8 lg:grid-cols-3"
         >
+            {/* 서버 무결성 검증(validateOrderAmount) 및 RPC 전달용 Hidden Inputs */}
+            <input type="hidden" name="itemsJson" value={serializedItems} />
+            <input
+                type="hidden"
+                name="itemsTotalAmount"
+                value={itemsTotalAmount}
+            />
+            <input type="hidden" name="shippingFee" value={shippingFee} />
+            <input type="hidden" name="totalAmount" value={totalAmount} />
+
             <div className="space-y-6 lg:col-span-2">
+                {state.message && !state.success && (
+                    <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-600">
+                        <FiAlertCircle className="h-4 w-4 shrink-0" />
+                        <span>{state.message}</span>
+                    </div>
+                )}
+
                 {/* 주문 상품 내역 확인 섹션 */}
                 <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
@@ -138,39 +130,46 @@ export default function CheckoutForm() {
                             장바구니 수정
                         </Link>
                     </div>
+
                     <div className="divide-y divide-gray-100">
-                        {items.map((item) => (
-                            <div
-                                key={item.id}
-                                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
-                                        <Image
-                                            src={
-                                                item.image || '/placeholder.png'
-                                            }
-                                            alt={item.name}
-                                            fill
-                                            sizes="56px"
-                                            className="object-cover"
-                                        />
+                        {items.map((item) => {
+                            const thumb = item.image || '/placeholder.png';
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                                            <Image
+                                                src={thumb}
+                                                alt={item.name}
+                                                fill
+                                                unoptimized={thumb.startsWith(
+                                                    '/files/',
+                                                )}
+                                                sizes="56px"
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-900">
+                                                {item.name}
+                                            </p>
+                                            <p className="mt-0.5 text-[11px] text-gray-500">
+                                                {formatPrice(item.price)} x{' '}
+                                                {item.quantity}개
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-gray-900">
-                                            {item.name}
-                                        </p>
-                                        <p className="mt-0.5 text-[11px] text-gray-500">
-                                            {formatPrice(item.price)} ×{' '}
-                                            {item.quantity}개
-                                        </p>
-                                    </div>
+                                    <span className="text-xs font-black text-gray-900">
+                                        {formatPrice(
+                                            item.price * item.quantity,
+                                        )}
+                                    </span>
                                 </div>
-                                <span className="text-xs font-black text-gray-900">
-                                    {formatPrice(item.price * item.quantity)}
-                                </span>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -182,6 +181,7 @@ export default function CheckoutForm() {
                             배송 정보 입력
                         </h2>
                     </div>
+
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-1.5">
@@ -263,7 +263,7 @@ export default function CheckoutForm() {
                             )}
                             <Input
                                 name="detailAddress"
-                                placeholder="상세 주소를 입력하세요(동, 호수 등)"
+                                placeholder="상세 주소를 입력하세요 (동, 호수 등)"
                                 className={cn(
                                     'mt-2',
                                     state.errors?.detailAddress &&
@@ -276,6 +276,16 @@ export default function CheckoutForm() {
                                     <span>{state.errors.detailAddress}</span>
                                 </p>
                             )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-700">
+                                배송 요청사항 (선택)
+                            </label>
+                            <Input
+                                name="deliveryMemo"
+                                placeholder="문 앞에 놓아주세요 / 경비실에 맡겨주세요"
+                            />
                         </div>
                     </div>
                 </div>
@@ -321,6 +331,7 @@ export default function CheckoutForm() {
                             </span>
                         </div>
                     </div>
+
                     <div className="border-t border-gray-200 pt-3">
                         <div className="flex items-baseline justify-between">
                             <span className="text-xs font-bold text-gray-900">
@@ -331,6 +342,7 @@ export default function CheckoutForm() {
                             </span>
                         </div>
                     </div>
+
                     <div className="pt-2">
                         <label className="flex items-start gap-2 text-xs text-gray-600">
                             <input
@@ -350,13 +362,14 @@ export default function CheckoutForm() {
                             </p>
                         )}
                     </div>
+
                     <Button
                         type="submit"
                         disabled={isPending}
                         className="h-12 w-full bg-blue-600 font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700"
                     >
                         {isPending
-                            ? '주문 생성 중...'
+                            ? '원자성 주문서 생성 중...'
                             : `${formatPrice(totalAmount)} 결제하기`}
                     </Button>
                 </div>

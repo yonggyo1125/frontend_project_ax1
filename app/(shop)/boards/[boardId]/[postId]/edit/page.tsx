@@ -23,7 +23,6 @@ export default async function BoardPostEditPage({
         notFound();
     }
 
-    // 작성자 본인 및 관리자가 아니면 수정 페이지 접근 차단
     const canEdit = Boolean(isAdmin || (user && post.user_id === user.id));
     if (!canEdit) {
         notFound();
@@ -35,10 +34,11 @@ export default async function BoardPostEditPage({
                 boardId={boardId}
                 boardName={boardSetting.name}
                 postId={post.id}
-                gid={post.gid}
                 initialData={{
+                    gid: post.gid,
                     title: post.title,
                     content: post.content,
+                    attachments: post.attachments,
                 }}
             />
         </div>

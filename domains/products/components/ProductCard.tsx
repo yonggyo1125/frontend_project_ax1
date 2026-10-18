@@ -8,6 +8,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+    const thumbnail = product.images[0] || '/placeholder.png';
+
     return (
         <div className="group relative flex flex-col rounded-2xl border border-gray-100 bg-white p-3.5 transition-all hover:border-gray-200 hover:shadow-lg">
             <Link
@@ -15,9 +17,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                 className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-50"
             >
                 <Image
-                    src={product.images[0] || '/placeholder.png'}
+                    src={thumbnail}
                     alt={product.name}
                     fill
+                    unoptimized={thumbnail.startsWith('/files/')}
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -31,12 +34,13 @@ export default function ProductCard({ product }: ProductCardProps) {
                         </Link>
                     </h3>
                 </div>
+
                 <div className="mt-2.5 flex items-baseline justify-between">
                     <span className="text-lg font-bold text-gray-900">
                         {formatPrice(product.price)}
                     </span>
                     <span className="text-[11px] font-medium text-gray-400">
-                        무료배송
+                        {product.price >= 50000 ? '무료배송' : '배송비 3,000원'}
                     </span>
                 </div>
             </div>

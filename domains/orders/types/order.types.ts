@@ -65,3 +65,36 @@ export interface Order {
     order_items?: OrderItem[];
     payments?: PaymentLog[];
 }
+
+// 클라이언트 주문서에서 전송하는 개별 품목 데이터
+export interface OrderItemInput {
+    productId: string;
+    name: string;
+    price: number;
+    quantity: number;
+}
+
+// 서버 DB(products)에서 조회한 실제 상품 기준 데이터
+export interface ServerProductPriceInfo {
+    id: string;
+    name: string;
+    price: number;
+}
+
+// create_order_with_items RPC의 p_items JSONB 규격과 1:1 매핑되는 영구 스냅샷 타입
+export interface OrderItemSnapshot {
+    product_id: string;
+    product_name: string;
+    price: number;
+    quantity: number;
+}
+
+// 주문 금액 및 배송비 무결성 검증 결과
+export interface OrderAmountValidationResult {
+    valid: boolean;
+    message?: string;
+    serverItemsTotalAmount: number;
+    serverShippingFee: number;
+    serverTotalAmount: number;
+    snapshotItems: OrderItemSnapshot[];
+}

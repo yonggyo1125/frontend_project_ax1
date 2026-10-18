@@ -1,7 +1,8 @@
 'use server';
 
-import { ActionState } from '@/shared/types/action.types';
+import { confirmFilesAction } from '@/domains/files/actions/confirmFiles.action';
 import { createServerClient } from '@/shared/lib/supabase';
+import { ActionState } from '@/shared/types/action.types';
 import { revalidatePath } from 'next/cache';
 
 export async function updatePostAction(
@@ -12,6 +13,8 @@ export async function updatePostAction(
 ): Promise<ActionState> {
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
+    const gid = formData.get('gid') as string;
+
     const errors: Record<string, string> = {};
 
     if (!title || !title.trim()) {
@@ -49,6 +52,11 @@ export async function updatePostAction(
             success: false,
             message: `게시글 수정에 실패했습니다: ${error.message}`,
         };
+    }
+
+    // 수정 중 새롭게 추가된 첨부파일들을 done = true로 확정
+    if (gid) {
+        await confirmFilesAction(gid, 'post_attach');
     }
 
     revalidatePath(`/boards/${boardId}`);

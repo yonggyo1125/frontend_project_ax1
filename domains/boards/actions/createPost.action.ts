@@ -1,5 +1,6 @@
 'use server';
 
+import { confirmFilesAction } from '@/domains/files/actions/confirmFiles.action';
 import { createServerClient } from '@/shared/lib/supabase';
 import { ActionState } from '@/shared/types/action.types';
 import { revalidatePath } from 'next/cache';
@@ -13,6 +14,7 @@ export async function createPostAction(
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
     const gid = (formData.get('gid') as string) || `post-${uuid4()}`;
+
     const errors: Record<string, string> = {};
 
     if (!title || !title.trim()) {
@@ -21,7 +23,6 @@ export async function createPostAction(
         errors.title = '제목은 2자 이상 입력해야 합니다.';
     }
 
-    // HTML 태그를 제거한 순수 텍스트 기준 길이 검증
     const strippedContent = content
         ? content.replace(/<[^>]*>?/gm, '').trim()
         : '';
@@ -37,7 +38,6 @@ export async function createPostAction(
 
     const supabase = createServerClient();
 
-    // 현재 세션 사용자 확인
     const {
         data: { user },
     } = await supabase.auth.getUser();
@@ -74,8 +74,10 @@ export async function createPostAction(
         };
     }
 
-    revalidatePath(`/boards/${boardId}`);
+    // 게시글 저장 성공 시 해당 gid로 업로드된 첨부파일들을 done = true로 확정
+    await confirmFilesAction(gid, 'post_attach');
 
+    revalidatePath(`/boards/${boardId}`);
     return {
         success: true,
         data: { postId: data.id },

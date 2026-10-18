@@ -14,7 +14,7 @@ import {
 
 const ADMIN_MENUS = [
     { label: '대시보드', href: '/admin', icon: FiHome },
-    { label: '새 상품 등록', href: '/admin/products/new', icon: FiBox },
+    { label: '상품 관리', href: '/admin/products', icon: FiBox },
     { label: '카테고리/진열 관리', href: '/admin/categories', icon: FiGrid },
     { label: '주문 관리', href: '/admin/orders', icon: FiShoppingBag },
     { label: '회원 관리', href: '/admin/users', icon: FiUsers },
@@ -37,11 +37,14 @@ export default function AdminSidebar() {
                     쇼핑몰 통합 백오피스
                 </p>
             </div>
-
             <nav className="space-y-1">
                 {ADMIN_MENUS.map((menu) => {
                     const Icon = menu.icon;
-                    const isActive = pathname === menu.href;
+                    const isActive =
+                        menu.href === '/admin'
+                            ? pathname === '/admin'
+                            : pathname.startsWith(menu.href);
+
                     return (
                         <Link
                             key={menu.href}
